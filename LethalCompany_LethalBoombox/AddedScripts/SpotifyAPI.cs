@@ -3,11 +3,13 @@ using Newtonsoft.Json;
 using UnityEngine;
 using System.Collections;
 using UnityEngine.Networking;
-using static TerminalApi.TerminalApi;
-using TerminalApi.Events;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using System.Security.Policy;
+using static LethalCompany_LethalBoombox.AddedScripts.SpotifyAPI;
+using System.Xml.Linq;
+using System.Threading.Tasks;
+using System.Net;
 
 
 namespace LethalCompany_LethalBoombox.AddedScripts
@@ -15,20 +17,19 @@ namespace LethalCompany_LethalBoombox.AddedScripts
     internal class SpotifyAPI : MonoBehaviour
     {
         public static SpotifyAPI Instance { get; private set; }
-        public TerminalKeyword SongInputKeyword;
-        public string SongInput;
-        public TerminalKeyword ArtistInputKeyword;
-        public string ArtistInput;
-        public AudioClip[] spotifyAudioClips;
         public bool firstFetch = true;
         public bool searchCriteriaChanged = false;
         public bool invalidInput = false;
 
         private readonly string clientID = "17dfce76674e4117896a74272baa27a7";
         private readonly string clientSecret = "b71348dcd069404bba15f209537af959";
+        private AudioClip[] spotifyAudioClips;
         private static SpotifyAuthResult spotifyAuthResult;
         private static SpotifyResults spotifyResults;
         private static Item[] artistFilteredSpotifyTracks = new Item[10];
+        private string SongInput;
+        private string ArtistInput;
+        private bool isFetchingSongs;
 
         public class SpotifyAuthResult
         {
@@ -126,21 +127,11 @@ namespace LethalCompany_LethalBoombox.AddedScripts
                 Instance = this;
             }
             StartCoroutine(InitializeSpotify());
-            TerminalKeyword songKeyword = CreateTerminalKeyword("song", true);
-            TerminalKeyword artistKeyword = CreateTerminalKeyword("artist", true);
-            TerminalKeyword trackKeyword = CreateTerminalKeyword("track", true);
-            AddTerminalKeyword(trackKeyword);
-
-            AddTerminalKeyword(songKeyword);
-            AddTerminalKeyword(artistKeyword);
-            AddCommand("fetch", "No song information set.\n", null, true);
-
-            SongInputKeyword = null;
-            ArtistInputKeyword = null;
+            
             SongInput = "";
             ArtistInput = "";
-
             spotifyAudioClips = new AudioClip[0];
+            isFetchingSongs = false;
         }
 
         private IEnumerator InitializeSpotify()
@@ -170,9 +161,43 @@ namespace LethalCompany_LethalBoombox.AddedScripts
             }
         }
 
+        public SpotifyResults GetSpotifyResults()
+        {
+            return spotifyResults;
+        }
+
         public Item[] GetArtistFilteredSpotifyTracks()
         {
             return artistFilteredSpotifyTracks;
+        }
+
+        public AudioClip[] GetSpotifyAudioClips()
+        {
+            return spotifyAudioClips;
+        }
+
+        public bool GetIsFetchingSongs()
+        {
+            return isFetchingSongs;
+        }
+
+        public string GetSongInput()
+        {
+            return SongInput;
+        }
+
+        public void SetSongInput(string SongInput)
+        {
+            searchCriteriaChanged = true;
+            this.SongInput = SongInput;
+            LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Song Changed: {0}", SongInput));
+        }
+
+        public void SetArtistInput(string ArtistInput)
+        {
+            searchCriteriaChanged = true;
+            this.ArtistInput = ArtistInput;
+            LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Artist Changed: {0}", ArtistInput));
         }
 
         private void SetInitialSpotifySongs()
@@ -185,44 +210,49 @@ namespace LethalCompany_LethalBoombox.AddedScripts
             }
         }
 
-        public void SearchSpotify()
+        public string SearchSpotify()
         {
-            LethalBoomboxBase.Instance.mls.LogInfo(string.Format("SearchSpotify, SongInput: {0}", SongInput));
-            string uri = string.Format("https://api.spotify.com/v1/search?q={0}&type=track&limit=50", SongInput);
-            StartCoroutine(FetchSpotifySongs(uri));
+            LethalBoomboxBase.Instance.mls.LogInfo(string.Format("\nSearchSpotify\nSongInput: {0}\nAtistInput: {1}\n", SongInput, ArtistInput));
             searchCriteriaChanged = false;
+            string uri = string.Format("https://api.spotify.com/v1/search?q={0}&type=track&limit=50", SongInput);
+            //string uri = string.Format("https://catfact.ninja/fact");
+            UnityWebRequest songRequest = UnityWebRequest.Get(uri);
+            isFetchingSongs = true;
+            StartCoroutine(FetchSpotifySongs(songRequest, uri));
+            //while (!songRequest.isDone || isFetchingSongs);
+
+            return FormatSpotifyTracksTerminalOutput();
         }
 
-        private IEnumerator FetchSpotifySongs(string uri)
+        private IEnumerator FetchSpotifySongs(UnityWebRequest songRequest, string uri)
         {
-            using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
+            using (songRequest)
             {
-                webRequest.SetRequestHeader("Content-Type", "application/json");
-                webRequest.SetRequestHeader("Authorization", string.Format("Bearer {0}", spotifyAuthResult.access_token));
+                songRequest.SetRequestHeader("Content-Type", "application/json");
+                songRequest.SetRequestHeader("Authorization", string.Format("Bearer {0}", spotifyAuthResult.access_token));
+                LethalBoomboxBase.Instance.mls.LogInfo(string.Format("uri before sendRequest: {0}\n", uri));
 
-                yield return webRequest.SendWebRequest();
-                switch (webRequest.result)
+                yield return songRequest.SendWebRequest();
+
+                switch (songRequest.result)
                 {
                     case UnityWebRequest.Result.ConnectionError:
-                        LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Connection Error: {0}", webRequest.error));
+                        LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Connection Error: {0}", songRequest.error));
                         break;
                     case UnityWebRequest.Result.DataProcessingError:
-                        LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Data Processing Error: {0}", webRequest.error));
+                        LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Data Processing Error: {0}", songRequest.error));
                         break;
                     case UnityWebRequest.Result.Success:
-                        LethalBoomboxBase.Instance.mls.LogInfo(webRequest.downloadHandler.text);
-                        spotifyResults = JsonConvert.DeserializeObject<SpotifyResults>(webRequest.downloadHandler.text);
-
-                        string terminalOutput = FormatSpotifyTracksTerminalOutput(spotifyResults);
-                        terminalOutput = UnescapeString(terminalOutput);
-                        if (terminalOutput == "")
-                            terminalOutput = "No tracks found with search.\n";
-                        AddCommand("fetch", string.Format("Fetching songs...\n{0}", terminalOutput), null, true);
+                        LethalBoomboxBase.Instance.mls.LogInfo(songRequest.downloadHandler.text);
+                        spotifyResults = JsonConvert.DeserializeObject<SpotifyResults>(songRequest.downloadHandler.text);
+                        SetTrackOptions();
+                        isFetchingSongs = false;
                         break;
                     default:
-                        LethalBoomboxBase.Instance.mls.LogInfo(string.Format("API Error: {0}", webRequest.error));
+                        LethalBoomboxBase.Instance.mls.LogInfo(string.Format("API Error: {0}", songRequest.error));
                         break;
                 }
+                //return "Error fetching songs...";
             }
         }
 
@@ -255,7 +285,7 @@ namespace LethalCompany_LethalBoombox.AddedScripts
                     case UnityWebRequest.Result.Success:
                         AudioClip newSpotifyAudioClip = DownloadHandlerAudioClip.GetContent(webRequest);
                         AddAudioClip(newSpotifyAudioClip);
-                        LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Adding new track: {0}", spotifyResults.tracks.items[trackNumber].name));
+                        LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Adding new track: {0}", artistFilteredSpotifyTracks[trackNumber].name));
                         break;
                     default:
                         LethalBoomboxBase.Instance.mls.LogInfo(string.Format("GetTrackAsAudioClip API Error: {0}", webRequest.error));
@@ -309,24 +339,21 @@ namespace LethalCompany_LethalBoombox.AddedScripts
             }
         }
 
-        public string FormatSpotifyTracksTerminalOutput(SpotifyResults spotifyResults)
+        public void SetTrackOptions()
         {
-            string terminalOutput = "";
             int trackCount = 0;
             artistFilteredSpotifyTracks = new Item[10];
             for (int i = 0; i < spotifyResults.tracks.items.Length; i++)
             {
-                if (spotifyResults.tracks.items[i] != null)
+                if (spotifyResults.tracks.items[i] != null && spotifyResults.tracks.items[i].preview_url != null)
                 {
                     string trackArtistNames = spotifyResults.tracks.items[i].artists[0].name;
-                    for (int j = 1; j < spotifyResults.tracks.items[i].artists.Length; j++)
+                    for (int j = 1; j<spotifyResults.tracks.items[i].artists.Length; j++)
                     {
                         trackArtistNames = string.Format("{0}, {1}", trackArtistNames, spotifyResults.tracks.items[i].artists[j].name);
                     }
                     if (trackArtistNames.ToLower().Contains(ArtistInput.ToLower()))
                     {
-                        terminalOutput = string.Format("{0}Track {1}: {2}, By: {3}\n", terminalOutput, (trackCount + 1).ToString(),
-                            spotifyResults.tracks.items[i].name, trackArtistNames);
                         artistFilteredSpotifyTracks[trackCount] = spotifyResults.tracks.items[i];
                         trackCount++;
                     }
@@ -334,33 +361,31 @@ namespace LethalCompany_LethalBoombox.AddedScripts
                 if (trackCount >= 10)
                     break;
             }
+        }
 
-            if (firstFetch == true)
+        public string FormatSpotifyTracksTerminalOutput()
+        {
+            string terminalOutput = "";
+            for (int i = 0; i < artistFilteredSpotifyTracks.Length; i++)
             {
-                TerminalKeyword trackKeyword = GetKeyword("track");
-                for (int i = 0; i < 10; i++)
+                if (artistFilteredSpotifyTracks[i] != null)
                 {
-                    DeleteKeyword((i+1).ToString());
-                    if (i < trackCount)
+                    string trackArtistNames = artistFilteredSpotifyTracks[i].artists[0].name;
+                    for (int j = 1; j < artistFilteredSpotifyTracks[i].artists.Length; j++)
                     {
-                        TerminalKeyword trackNumberKeyword = CreateTerminalKeyword(string.Format("{0}", (i + 1).ToString()));
-                        AddTerminalKeyword(trackNumberKeyword);
-                        TerminalNode trackTriggerNode = CreateTerminalNode(string.Format("Track {0} added to boombox.\n", (i + 1).ToString()), true);
-                        AddCompatibleNoun(trackKeyword, trackNumberKeyword.word, trackTriggerNode);
+                        trackArtistNames = string.Format("{0}, {1}", trackArtistNames, artistFilteredSpotifyTracks[i].artists[j].name);
                     }
-                    else
-                    {
-                        TerminalKeyword trackNumberKeyword = CreateTerminalKeyword(string.Format("{0}", (i + 1).ToString()));
-                        AddTerminalKeyword(trackNumberKeyword);
-                        TerminalNode trackTriggerNode = CreateTerminalNode(string.Format("Track {0} is an invalid track.\n", (i + 1).ToString()), true);
-                        AddCompatibleNoun(trackKeyword, trackNumberKeyword.word, trackTriggerNode);
-                    }
+                    terminalOutput = string.Format("{0}Track {1}: {2}, By: {3}\n", terminalOutput, (i + 1).ToString(), artistFilteredSpotifyTracks[i].name, trackArtistNames);
                 }
-                firstFetch = false;
             }
-
+            if (terminalOutput == "")
+                terminalOutput = "No tracks found with search.\n";
+            else
+                terminalOutput = UnescapeString(terminalOutput);
+            
             return terminalOutput;
         }
+
         public string UnescapeString(string inputString)
         {
             string stringWithUnicodeSymbols = @inputString;
@@ -380,7 +405,7 @@ namespace LethalCompany_LethalBoombox.AddedScripts
                         outString += s;
                     }
                 }
-                catch (Exception e)
+                catch
                 {
                     outString += s;
                 }

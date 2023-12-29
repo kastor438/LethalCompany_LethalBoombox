@@ -70,12 +70,6 @@ namespace LethalCompany_LethalBoombox.Patches
 
                     LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Current Audio Clip Index: {0}\nNext Audio Clip Index: {1}", currentAudioClipIndex.ToString(), newAudioClipIndex.ToString()));
                 }
-
-                // SpotifyAPI testing
-                //if (Keyboard.current.digit0Key.wasPressedThisFrame)
-                //{
-                //    SpotifyAPI.Instance.SearchSpotify();
-                //}
             }
         }
 
@@ -85,10 +79,10 @@ namespace LethalCompany_LethalBoombox.Patches
         {
             if (startMusic)
             {
-                LethalBoomboxBase.Instance.mls.LogInfo(string.Format("SpotifyAPI.Instance.spotifyAudioClips.Length: {0}", SpotifyAPI.Instance.spotifyAudioClips.Length));
-                if (SpotifyAPI.Instance != null && SpotifyAPI.Instance.spotifyAudioClips.Length > 0 && FirstSpotifyAudioPlay)
+                LethalBoomboxBase.Instance.mls.LogInfo(string.Format("SpotifyAPI.Instance.GetSpotifyAudioClips().Length: {0}", SpotifyAPI.Instance.GetSpotifyAudioClips().Length));
+                if (SpotifyAPI.Instance != null && SpotifyAPI.Instance.GetSpotifyAudioClips().Length > 0 && FirstSpotifyAudioPlay)
                 {
-                    ___musicAudios = SpotifyAPI.Instance.spotifyAudioClips;
+                    ___musicAudios = SpotifyAPI.Instance.GetSpotifyAudioClips();
                     FirstSpotifyAudioPlay = false;
                     CurrentAudioClipIndex = 0;
                     LethalBoomboxBase.Instance.mls.LogInfo(string.Format("First Spotify Audio Play."));

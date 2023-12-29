@@ -1,8 +1,6 @@
 ﻿using HarmonyLib;
 using LethalCompany_LethalBoombox.AddedScripts;
-using static TerminalApi.TerminalApi;
 using System.Net;
-using TerminalApi;
 
 namespace LethalCompany_LethalBoombox.Patches
 {
@@ -15,6 +13,8 @@ namespace LethalCompany_LethalBoombox.Patches
         {
             GameNetworkManager.Instance.gameObject.AddComponent<SpotifyAPI>();
             LethalBoomboxBase.Instance.mls.LogInfo("Component SpotifyAPI mounted on GameNetworkManager.");
+            GameNetworkManager.Instance.gameObject.AddComponent<BoomboxTerminalCommands>();
+            LethalBoomboxBase.Instance.mls.LogInfo("Component BoomboxTerminalCommands mounted on GameNetworkManager.");
         }
     }
 }

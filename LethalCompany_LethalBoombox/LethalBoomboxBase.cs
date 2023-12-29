@@ -1,7 +1,16 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using LCAPI.TerminalCommands.Attributes;
+using LCAPI.TerminalCommands.Models;
+using LethalCompany_LethalBoombox.AddedScripts;
 using LethalCompany_LethalBoombox.Patches;
+using System;
+using System.Security.Policy;
+using System.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.Networking;
+using static LethalCompany_LethalBoombox.AddedScripts.SpotifyAPI;
 
 namespace LethalCompany_LethalBoombox
 {
@@ -13,6 +22,9 @@ namespace LethalCompany_LethalBoombox
         private const string modVersion = "1.0.0";
 
         private readonly Harmony harmony = new Harmony(modGUID);
+
+        private ModCommands modCommands;
+
         public static LethalBoomboxBase Instance;
 
         internal ManualLogSource mls;
@@ -27,9 +39,16 @@ namespace LethalCompany_LethalBoombox
             mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
             mls.LogInfo("LethalBoombox has loaded.");
 
+            modCommands = CommandRegistry.CreateModRegistry();
+            modCommands.RegisterFrom(this); // Register commands from the plugin class
+
             harmony.PatchAll(typeof(GameNetworkManagerPatch));
             harmony.PatchAll(typeof(BoomboxItemPatch));
-            harmony.PatchAll(typeof(TerminalPatch));
+        }
+
+        public void RegisterCommands<T>(T instance) where T : class
+        {
+            modCommands.RegisterFrom(instance); // Register commands from the plugin class
         }
     }
 }
