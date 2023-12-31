@@ -22,11 +22,6 @@ namespace LethalCompany_LethalBoombox.Patches
                 GameNetworkManager.Instance.gameObject.AddComponent<BoomboxTerminalCommands>();
                 LethalBoomboxBase.Instance.mls.LogInfo("Component BoomboxTerminalCommands mounted on GameNetworkManager.");
             }
-            if (GameNetworkManager.Instance.gameObject.GetComponent<BoomboxNetworkHandler>() == null)
-            {
-                GameNetworkManager.Instance.gameObject.AddComponent<BoomboxNetworkHandler>();
-                LethalBoomboxBase.Instance.mls.LogInfo("Component BoomboxNetworkHandler mounted on GameNetworkManager.");
-            }
         }
     }
 }
