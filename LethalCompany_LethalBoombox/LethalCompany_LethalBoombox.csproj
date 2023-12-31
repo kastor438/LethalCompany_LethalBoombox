@@ -100,7 +100,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AddedScripts\BoomboxNetworkHandler.cs" />
     <Compile Include="AddedScripts\BoomboxTerminalCommands.cs" />
     <Compile Include="AddedScripts\SpotifyAPI.cs" />
     <Compile Include="LethalBoomboxBase.cs" />
