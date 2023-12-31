@@ -4,12 +4,6 @@ using UnityEngine;
 using System.Collections;
 using UnityEngine.Networking;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json.Linq;
-using System.Security.Policy;
-using static LethalCompany_LethalBoombox.AddedScripts.SpotifyAPI;
-using System.Xml.Linq;
-using System.Threading.Tasks;
-using System.Net;
 
 
 namespace LethalCompany_LethalBoombox.AddedScripts
@@ -23,7 +17,7 @@ namespace LethalCompany_LethalBoombox.AddedScripts
 
         private readonly string clientID = "17dfce76674e4117896a74272baa27a7";
         private readonly string clientSecret = "b71348dcd069404bba15f209537af959";
-        private AudioClip[] spotifyAudioClips;
+        private static AudioClip[] spotifyAudioClips;
         private static SpotifyAuthResult spotifyAuthResult;
         private static SpotifyResults spotifyResults;
         private static Item[] artistFilteredSpotifyTracks = new Item[10];
@@ -37,7 +31,6 @@ namespace LethalCompany_LethalBoombox.AddedScripts
             public string token_type { get; set; }
             public int expires_in { get; set; }
         }
-
 
         public class SpotifyResults
         {
@@ -200,7 +193,7 @@ namespace LethalCompany_LethalBoombox.AddedScripts
             LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Artist Changed: {0}", ArtistInput));
         }
 
-        private void SetInitialSpotifySongs()
+        public void SetInitialSpotifySongs()
         {
             string[] audioClipURLs = { "https://p.scdn.co/mp3-preview/3c07483a9f0401cffb46d104b5cb1b30853e7767?cid=17dfce76674e4117896a74272baa27a7" };
 
@@ -208,20 +201,17 @@ namespace LethalCompany_LethalBoombox.AddedScripts
             {
                 GetTrackAsAudioClip(audioClipURLs[i]);
             }
+            LethalBoomboxBase.Instance.mls.LogInfo("Set Initial Tracks.");
         }
 
-        public string SearchSpotify()
+        public void SearchSpotify()
         {
-            LethalBoomboxBase.Instance.mls.LogInfo(string.Format("\nSearchSpotify\nSongInput: {0}\nAtistInput: {1}\n", SongInput, ArtistInput));
             searchCriteriaChanged = false;
             string uri = string.Format("https://api.spotify.com/v1/search?q={0}&type=track&limit=50", SongInput);
             //string uri = string.Format("https://catfact.ninja/fact");
             UnityWebRequest songRequest = UnityWebRequest.Get(uri);
             isFetchingSongs = true;
             StartCoroutine(FetchSpotifySongs(songRequest, uri));
-            //while (!songRequest.isDone || isFetchingSongs);
-
-            return FormatSpotifyTracksTerminalOutput();
         }
 
         private IEnumerator FetchSpotifySongs(UnityWebRequest songRequest, string uri)
@@ -230,7 +220,6 @@ namespace LethalCompany_LethalBoombox.AddedScripts
             {
                 songRequest.SetRequestHeader("Content-Type", "application/json");
                 songRequest.SetRequestHeader("Authorization", string.Format("Bearer {0}", spotifyAuthResult.access_token));
-                LethalBoomboxBase.Instance.mls.LogInfo(string.Format("uri before sendRequest: {0}\n", uri));
 
                 yield return songRequest.SendWebRequest();
 
@@ -352,7 +341,7 @@ namespace LethalCompany_LethalBoombox.AddedScripts
                     {
                         trackArtistNames = string.Format("{0}, {1}", trackArtistNames, spotifyResults.tracks.items[i].artists[j].name);
                     }
-                    if (trackArtistNames.ToLower().Contains(ArtistInput.ToLower()))
+                    if (ArtistInput == string.Empty || trackArtistNames.ToLower().Contains(ArtistInput.ToLower()))
                     {
                         artistFilteredSpotifyTracks[trackCount] = spotifyResults.tracks.items[i];
                         trackCount++;

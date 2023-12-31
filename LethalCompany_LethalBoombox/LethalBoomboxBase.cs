@@ -1,19 +1,14 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
-using LCAPI.TerminalCommands.Attributes;
 using LCAPI.TerminalCommands.Models;
-using LethalCompany_LethalBoombox.AddedScripts;
 using LethalCompany_LethalBoombox.Patches;
-using System;
-using System.Security.Policy;
-using System.Threading.Tasks;
+using System.Reflection;
 using UnityEngine;
-using UnityEngine.Networking;
-using static LethalCompany_LethalBoombox.AddedScripts.SpotifyAPI;
 
 namespace LethalCompany_LethalBoombox
 {
+    [BepInDependency("LCAPI.TerminalCommands", BepInDependency.DependencyFlags.HardDependency)]
     [BepInPlugin(modGUID, modName, modVersion)]
     public class LethalBoomboxBase : BaseUnityPlugin
     {
@@ -36,6 +31,8 @@ namespace LethalCompany_LethalBoombox
                 Instance = this;
             }
 
+            NetcodeWeaver();
+
             mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
             mls.LogInfo("LethalBoombox has loaded.");
 
@@ -43,12 +40,30 @@ namespace LethalCompany_LethalBoombox
             modCommands.RegisterFrom(this); // Register commands from the plugin class
 
             harmony.PatchAll(typeof(GameNetworkManagerPatch));
+            harmony.PatchAll(typeof(StartOfRoundPatch));
             harmony.PatchAll(typeof(BoomboxItemPatch));
         }
 
         public void RegisterCommands<T>(T instance) where T : class
         {
             modCommands.RegisterFrom(instance); // Register commands from the plugin class
+        }
+
+        private static void NetcodeWeaver()
+        {
+            var types = Assembly.GetExecutingAssembly().GetTypes();
+            foreach (var type in types)
+            {
+                var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                foreach (var method in methods)
+                {
+                    var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
+                    if (attributes.Length > 0)
+                    {
+                        method.Invoke(null, null);
+                    }
+                }
+            }
         }
     }
 }

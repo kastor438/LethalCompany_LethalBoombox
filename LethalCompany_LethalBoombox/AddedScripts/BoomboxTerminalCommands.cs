@@ -18,23 +18,34 @@ namespace LethalCompany_LethalBoombox.AddedScripts
             {
                 Instance = this;
             }
+            RegisterBoomboxCommands();
+        }
+
+        public void RegisterBoomboxCommands()
+        {
             LethalBoomboxBase.Instance.RegisterCommands(this);
+            LethalBoomboxBase.Instance.mls.LogInfo("Registered Boombox Commands.");
         }
 
         // Song Commands
         [TerminalCommand("song", true)]
         public string SongCommand(Terminal caller)
         {
-            string songSetOuput = "Song Reset.\n";
             SpotifyAPI.Instance.SetSongInput("");
+            string songSetOuput = "Song Reset.\n";
             songSetOuput = AppendPrefixNewLines(songSetOuput);
             return songSetOuput;
         }
         [TerminalCommand("song", true)]
         public string SongCommand(Terminal caller, [RemainingText] string songInput)
         {
-            string songSetOuput = string.Format("Song Set: {0}\n", songInput);
             SpotifyAPI.Instance.SetSongInput(songInput);
+            if (SpotifyAPI.Instance != null && SpotifyAPI.Instance.searchCriteriaChanged)
+            {
+                SpotifyAPI.Instance.SearchSpotify();
+            }
+
+            string songSetOuput = string.Format("Song Set: {0}\n", songInput);
             songSetOuput = AppendPrefixNewLines(songSetOuput);
             return songSetOuput;
         }
@@ -43,16 +54,18 @@ namespace LethalCompany_LethalBoombox.AddedScripts
         [TerminalCommand("artist", true)]
         public string ArtistCommand(Terminal caller)
         {
-            string artistSetOuput = "Artist Reset.\n";
             SpotifyAPI.Instance.SetArtistInput("");
+            string artistSetOuput = "Artist Reset.\n";
             artistSetOuput = AppendPrefixNewLines(artistSetOuput);
             return artistSetOuput;
         }
         [TerminalCommand("artist", true)]
         public string ArtistCommand(Terminal caller, [RemainingText] string artistInput)
         {
-            string artistSetOuput = string.Format("Artist Set: {0}\n", artistInput);
             SpotifyAPI.Instance.SetArtistInput(artistInput);
+            SpotifyAPI.Instance.SetTrackOptions();
+
+            string artistSetOuput = string.Format("Artist Set: {0}\n", artistInput);
             artistSetOuput = AppendPrefixNewLines(artistSetOuput);
             return artistSetOuput;
         }
@@ -63,12 +76,8 @@ namespace LethalCompany_LethalBoombox.AddedScripts
         {
             string spotifySongsOutput;
             //mls.LogInfo(string.Format("SpotifyAPI.Instance == null: {0}\nSpotifyAPI.Instance.searchCriteriaChanged: {1}\n", (SpotifyAPI.Instance == null).ToString(), SpotifyAPI.Instance.searchCriteriaChanged));
-            if (SpotifyAPI.Instance != null && SpotifyAPI.Instance.searchCriteriaChanged && SpotifyAPI.Instance.GetSongInput().Length > 0)
-            {
-                string fetchedSongsTerminalOutput = SpotifyAPI.Instance.SearchSpotify();
-                spotifySongsOutput = fetchedSongsTerminalOutput;
-            }
-            else if (SpotifyAPI.Instance.GetSongInput().Length == 0)
+            
+            if (SpotifyAPI.Instance.GetSongInput().Length == 0)
             {
                 spotifySongsOutput = "Set a song name to search.\n";
             }
@@ -90,10 +99,10 @@ namespace LethalCompany_LethalBoombox.AddedScripts
             try
             {
                 int trackNumber = int.Parse(trackInput);
-                if (trackNumber > 0 && trackNumber <= Array.IndexOf(SpotifyAPI.Instance.GetArtistFilteredSpotifyTracks(), null))
+                if (trackNumber > 0 && trackNumber <= 10 &&
+                    (Array.IndexOf(SpotifyAPI.Instance.GetArtistFilteredSpotifyTracks(), null) == -1 || 
+                    trackNumber <= Array.IndexOf(SpotifyAPI.Instance.GetArtistFilteredSpotifyTracks(), null)))
                 {
-                    LethalBoomboxBase.Instance.mls.LogInfo(string.Format("trackNumber: {0}", trackNumber));
-                    LethalBoomboxBase.Instance.mls.LogInfo(string.Format("SpotifyAPI.Instance.GetArtistFilteredSpotifyTracks().Length: {0}", SpotifyAPI.Instance.GetArtistFilteredSpotifyTracks().Length));
                     SpotifyAPI.Instance.GetTrackAsAudioClip(trackNumber - 1);
                     spotifyTracksOutput = string.Format("Track {0} added to boombox.\n", trackInput);
                 }
