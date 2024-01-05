@@ -46,6 +46,9 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="NicholaScott.BepInEx.RuntimeNetcodeRPCValidator">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\NicholaScott.BepInEx.RuntimeNetcodeRPCValidator.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -100,8 +103,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddedScripts\BoomboxNetworkHandler.cs" />
     <Compile Include="AddedScripts\BoomboxTerminalCommands.cs" />
     <Compile Include="AddedScripts\SpotifyAPI.cs" />
+    <Compile Include="BoomboxPluginInfo.cs" />
     <Compile Include="LethalBoomboxBase.cs" />
     <Compile Include="Patches\BoomboxItemPatch.cs" />
     <Compile Include="Patches\GameNetworkManagerPatch.cs" />
@@ -109,11 +114,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="manifest.json" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>cd C:\NetcodePatcher-2.4.0
-NetcodePatcher.dll $(TargetDir) deps/</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>

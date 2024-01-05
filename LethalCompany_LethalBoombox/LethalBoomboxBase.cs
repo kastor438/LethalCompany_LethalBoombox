@@ -5,18 +5,16 @@ using LCAPI.TerminalCommands.Models;
 using LethalCompany_LethalBoombox.Patches;
 using System.Reflection;
 using UnityEngine;
-
+using RuntimeNetcodeRPCValidator;
 namespace LethalCompany_LethalBoombox
 {
     [BepInDependency("LCAPI.TerminalCommands", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(modGUID, modName, modVersion)]
+    [BepInDependency(RuntimeNetcodeRPCValidator.MyPluginInfo.PLUGIN_GUID, RuntimeNetcodeRPCValidator.MyPluginInfo.PLUGIN_VERSION)]
+    [BepInPlugin(BoomboxPluginInfo.PLUGIN_GUID, BoomboxPluginInfo.PLUGIN_NAME, BoomboxPluginInfo.PLUGIN_VERSION)]
     public class LethalBoomboxBase : BaseUnityPlugin
     {
-        private const string modGUID = "Kastor.LethalBoombox";
-        private const string modName = "LethalBoombox";
-        private const string modVersion = "1.0.0";
-
-        private readonly Harmony harmony = new Harmony(modGUID);
+        private readonly Harmony harmony = new Harmony(BoomboxPluginInfo.PLUGIN_GUID);
+        private NetcodeValidator netcodeValidator;
 
         private ModCommands modCommands;
 
@@ -31,9 +29,10 @@ namespace LethalCompany_LethalBoombox
                 Instance = this;
             }
 
-            NetcodeWeaver();
+            netcodeValidator = new NetcodeValidator(BoomboxPluginInfo.PLUGIN_GUID);
+            netcodeValidator.PatchAll();
 
-            mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
+            mls = BepInEx.Logging.Logger.CreateLogSource(BoomboxPluginInfo.PLUGIN_GUID);
             mls.LogInfo("LethalBoombox has loaded.");
 
             modCommands = CommandRegistry.CreateModRegistry();
@@ -49,21 +48,9 @@ namespace LethalCompany_LethalBoombox
             modCommands.RegisterFrom(instance); // Register commands from the plugin class
         }
 
-        private static void NetcodeWeaver()
+        private void OnDestroy()
         {
-            var types = Assembly.GetExecutingAssembly().GetTypes();
-            foreach (var type in types)
-            {
-                var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                foreach (var method in methods)
-                {
-                    var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
-                    if (attributes.Length > 0)
-                    {
-                        method.Invoke(null, null);
-                    }
-                }
-            }
+            netcodeValidator.Dispose();
         }
     }
 }

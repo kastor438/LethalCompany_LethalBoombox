@@ -8,7 +8,7 @@ namespace LethalCompany_LethalBoombox.Patches
     {
         [HarmonyPatch("PlayerLoadedClientRpc")]
         [HarmonyPostfix]
-        static void PlayerLoadedClientRpcPatch()
+        public static void PlayerLoadedClientRpcPatch()
         {
             LethalBoomboxBase.Instance.mls.LogInfo("PlayerLoadedClientRpcPatch");
 

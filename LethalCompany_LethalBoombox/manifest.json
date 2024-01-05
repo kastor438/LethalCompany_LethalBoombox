@@ -1,0 +1,9 @@
+{
+  "name": "LethalBoombox",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/kastor438/LethalCompany_LethalBoombox",
+  "description": "A mod to allow the user to use spotify API to search for songs, filter by artist, and add the preview tracks to the boombox item.",
+  "dependencies": [
+    "Ozone-Runtime_Netcode_Patcher-0.2.1"
+  ]
+}

@@ -3,8 +3,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using HarmonyLib;
 using LethalCompany_LethalBoombox.AddedScripts;
-using System.Runtime.CompilerServices;
-using Unity.Netcode;
 
 namespace LethalCompany_LethalBoombox.Patches
 {
@@ -13,6 +11,13 @@ namespace LethalCompany_LethalBoombox.Patches
     {
         public static int CurrentAudioClipIndex { get; private set; } = 0;
         public static bool FirstSpotifyAudioPlay = true;
+
+        [HarmonyPatch(nameof(BoomboxItem.Start))]
+        [HarmonyPrefix]
+        private static void AddToTerminalObject(BoomboxItem __instance)
+        {
+            __instance.gameObject.AddComponent<BoomboxNetworkHandler>();
+        }
 
         [HarmonyPatch(nameof(BoomboxItem.Update))]
         [HarmonyPostfix]
@@ -25,16 +30,12 @@ namespace LethalCompany_LethalBoombox.Patches
                 if (Keyboard.current.upArrowKey.wasPressedThisFrame)
                 {
                     float newVolume = Mathf.Clamp(currVolume + 0.1f, 0.0f, 1.0f);
-                    ChangeBoomboxVolume_ServerRpc(___boomboxAudio, newVolume);
-                    LethalBoomboxBase.Instance.mls.LogInfo("Increasing boombox volume.");
-                    LethalBoomboxBase.Instance.mls.LogInfo("Adjusted volume to " + newVolume.ToString() + "f.");
+                    __instance.GetComponent<BoomboxNetworkHandler>().ChangeBoomboxVolumeServerRpc(___boomboxAudio, newVolume);
                 }
                 else if (Keyboard.current.downArrowKey.wasPressedThisFrame)
                 {
                     float newVolume = Mathf.Clamp(currVolume - 0.1f, 0, 1.0f);
-                    ChangeBoomboxVolume_ServerRpc(___boomboxAudio, newVolume);
-                    LethalBoomboxBase.Instance.mls.LogInfo("Decreasing boombox volume.");
-                    LethalBoomboxBase.Instance.mls.LogInfo("Adjusted volume to " + newVolume.ToString() + "f.");
+                    __instance.GetComponent<BoomboxNetworkHandler>().ChangeBoomboxVolumeServerRpc(___boomboxAudio, newVolume);
                 }
 
                 if (Keyboard.current.rightArrowKey.wasPressedThisFrame)
@@ -49,9 +50,7 @@ namespace LethalCompany_LethalBoombox.Patches
                     {
                         newAudioClipIndex = currentAudioClipIndex + 1;
                     }
-                    ChangeBoomboxSong_ServerRpc(___boomboxAudio, ___musicAudios, newAudioClipIndex);
-
-                    LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Current Audio Clip Index: {0}\nNext Audio Clip Index: {1}", currentAudioClipIndex.ToString(), newAudioClipIndex.ToString()));
+                    __instance.GetComponent<BoomboxNetworkHandler>().ChangeBoomboxSongServerRpc(___boomboxAudio, ___musicAudios, newAudioClipIndex);
                 }
                 else if (Keyboard.current.leftArrowKey.wasPressedThisFrame)
                 {
@@ -65,36 +64,9 @@ namespace LethalCompany_LethalBoombox.Patches
                     {
                         newAudioClipIndex = currentAudioClipIndex - 1;
                     }
-                    ChangeBoomboxSong_ServerRpc(___boomboxAudio, ___musicAudios, newAudioClipIndex);
-
-                    LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Current Audio Clip Index: {0}\nNext Audio Clip Index: {1}", currentAudioClipIndex.ToString(), newAudioClipIndex.ToString()));
+                    __instance.GetComponent<BoomboxNetworkHandler>().ChangeBoomboxSongServerRpc(___boomboxAudio, ___musicAudios, newAudioClipIndex);
                 }
             }
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        static void ChangeBoomboxVolume_ServerRpc(AudioSource ___boomboxAudio, float newVolume)
-        {
-            ChangeBoomboxVolume_ClientRpc(___boomboxAudio, newVolume);
-        }
-
-        [ClientRpc]
-        static void ChangeBoomboxVolume_ClientRpc(AudioSource ___boomboxAudio, float newVolume)
-        {
-            ___boomboxAudio.volume = newVolume;
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        static void ChangeBoomboxSong_ServerRpc(AudioSource ___boomboxAudio, AudioClip[] ___musicAudios, int songIndex)
-        {
-            ChangeBoomboxSong_ClientRpc(___boomboxAudio, ___musicAudios, songIndex);
-        }
-
-        [ClientRpc]
-        static void ChangeBoomboxSong_ClientRpc(AudioSource ___boomboxAudio, AudioClip[] ___musicAudios, int songIndex)
-        {
-            ___boomboxAudio.clip = ___musicAudios[songIndex];
-            ___boomboxAudio.Play();
         }
 
         [HarmonyPatch("StartMusic")]
@@ -108,7 +80,7 @@ namespace LethalCompany_LethalBoombox.Patches
                 {
                     FirstSpotifyAudioPlay = false;
                     CurrentAudioClipIndex = 0;
-                    ___boomboxAudio.volume = 0.5f;
+                    ___boomboxAudio.volume = 0.4f;
                     LethalBoomboxBase.Instance.mls.LogInfo(string.Format("First Spotify Audio Play."));
                 }
                 else
