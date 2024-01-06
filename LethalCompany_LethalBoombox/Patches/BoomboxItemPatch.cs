@@ -14,7 +14,7 @@ namespace LethalCompany_LethalBoombox.Patches
 
         [HarmonyPatch(nameof(BoomboxItem.Start))]
         [HarmonyPrefix]
-        private static void AddToTerminalObject(BoomboxItem __instance)
+        private static void AddToBoomboxObject(BoomboxItem __instance)
         {
             __instance.gameObject.AddComponent<BoomboxNetworkHandler>();
         }
@@ -30,12 +30,12 @@ namespace LethalCompany_LethalBoombox.Patches
                 if (Keyboard.current.upArrowKey.wasPressedThisFrame)
                 {
                     float newVolume = Mathf.Clamp(currVolume + 0.1f, 0.0f, 1.0f);
-                    __instance.GetComponent<BoomboxNetworkHandler>().ChangeBoomboxVolumeServerRpc(___boomboxAudio, newVolume);
+                    __instance.GetComponent<BoomboxNetworkHandler>().Call_ChangeBoomboxVolumeClientRpc(newVolume);
                 }
                 else if (Keyboard.current.downArrowKey.wasPressedThisFrame)
                 {
                     float newVolume = Mathf.Clamp(currVolume - 0.1f, 0, 1.0f);
-                    __instance.GetComponent<BoomboxNetworkHandler>().ChangeBoomboxVolumeServerRpc(___boomboxAudio, newVolume);
+                    __instance.GetComponent<BoomboxNetworkHandler>().Call_ChangeBoomboxVolumeClientRpc(newVolume);
                 }
 
                 if (Keyboard.current.rightArrowKey.wasPressedThisFrame)
@@ -50,7 +50,7 @@ namespace LethalCompany_LethalBoombox.Patches
                     {
                         newAudioClipIndex = currentAudioClipIndex + 1;
                     }
-                    __instance.GetComponent<BoomboxNetworkHandler>().ChangeBoomboxSongServerRpc(___boomboxAudio, ___musicAudios, newAudioClipIndex);
+                    //__instance.GetComponent<BoomboxNetworkHandler>().Call_ChangeBoomboxSongClientRpc(___musicAudios, newAudioClipIndex);
                 }
                 else if (Keyboard.current.leftArrowKey.wasPressedThisFrame)
                 {
@@ -64,7 +64,7 @@ namespace LethalCompany_LethalBoombox.Patches
                     {
                         newAudioClipIndex = currentAudioClipIndex - 1;
                     }
-                    __instance.GetComponent<BoomboxNetworkHandler>().ChangeBoomboxSongServerRpc(___boomboxAudio, ___musicAudios, newAudioClipIndex);
+                    //__instance.GetComponent<BoomboxNetworkHandler>().Call_ChangeBoomboxSongClientRpc(___musicAudios, newAudioClipIndex);
                 }
             }
         }

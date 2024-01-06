@@ -9,8 +9,11 @@ namespace LethalCompany_LethalBoombox.AddedScripts
 {
     public class BoomboxNetworkHandler : NetworkBehaviour
     {
-        private void Awake()
+        public BoomboxItem boomboxInstance;
+
+        public void Awake()
         {
+            boomboxInstance = GetComponent<BoomboxItem>();
             // Are we a server instance?
             if (IsHost)
                 StartCoroutine(WaitForSomeTime());
@@ -20,54 +23,67 @@ namespace LethalCompany_LethalBoombox.AddedScripts
         {
             // Wait for network object to spawn, GameNetworkManager to exist, and have component SpotifyAPI attached.
             yield return new WaitUntil(() => NetworkObject.IsSpawned);
-            yield return new WaitUntil(() => GameNetworkManager.Instance != null);
-            yield return new WaitUntil(() => GameNetworkManager.Instance.GetComponent<SpotifyAPI>() != null);
 
             // Tell all clients to run this method.
-            RunBoomboxSetupClientRpc(gameObject.GetComponent<AudioSource>());
+            RunBoomboxSetupClientRpc();
         }
 
         [ClientRpc]
-        public void RunBoomboxSetupClientRpc(AudioSource ___boomboxAudio)
+        public void RunBoomboxSetupClientRpc()
         {
-            RunBoomboxSetupServerRpc(___boomboxAudio);
+            RunBoomboxSetupServerRpc();
         }
         [ServerRpc]
-        public void RunBoomboxSetupServerRpc(AudioSource ___boomboxAudio)
+        public void RunBoomboxSetupServerRpc()
         {
-            SetBoomboxClientRpc(___boomboxAudio);
+            SetBoomboxClientRpc();
         }
         [ClientRpc]
-        public void SetBoomboxClientRpc(AudioSource ___boomboxAudio)
+        public void SetBoomboxClientRpc()
         {
-            ___boomboxAudio.volume = 0.4f;
+            boomboxInstance.GetComponent<AudioSource>().volume = 0.4f;
+            LethalBoomboxBase.Instance.mls.LogInfo("Clearly spawned......");
         }
 
-        [ServerRpc(RequireOwnership = false)]
-        public void ChangeBoomboxVolumeServerRpc(AudioSource ___boomboxAudio, float newVolume)
+        // Changing boombox volume
+        [ClientRpc]
+        public void Call_ChangeBoomboxVolumeClientRpc(float newVolume)
         {
-            ChangeBoomboxVolumeClientRpc(___boomboxAudio, newVolume);
+            ChangeBoomboxVolumeServerRpc(newVolume);
+        }
+
+        [ServerRpc]
+        public void ChangeBoomboxVolumeServerRpc(float newVolume)
+        {
+            ChangeBoomboxVolumeClientRpc(newVolume);
         }
 
         [ClientRpc]
-        public void ChangeBoomboxVolumeClientRpc(AudioSource ___boomboxAudio, float newVolume)
+        public void ChangeBoomboxVolumeClientRpc(float newVolume)
         {
             LethalBoomboxBase.Instance.mls.LogInfo("Adjusted volume to " + newVolume.ToString() + "f.");
-            ___boomboxAudio.volume = newVolume;
+            boomboxInstance.GetComponent<AudioSource>().volume = newVolume;
+        }
+        
+        // Changing boombox song
+        [ClientRpc]
+        public void Call_ChangeBoomboxSongClientRpc(AudioClip[] ___musicAudios, int songIndex)
+        {
+            ChangeBoomboxSongServerRpc(___musicAudios, songIndex);
         }
 
-        [ServerRpc(RequireOwnership = false)]
-        public void ChangeBoomboxSongServerRpc(AudioSource ___boomboxAudio, AudioClip[] ___musicAudios, int songIndex)
+        [ServerRpc]
+        public void ChangeBoomboxSongServerRpc(AudioClip[] ___musicAudios, int songIndex)
         {
-            ChangeBoomboxSongClientRpc(___boomboxAudio, ___musicAudios, songIndex);
+            ChangeBoomboxSongClientRpc(___musicAudios, songIndex);
         }
 
         [ClientRpc]
-        public void ChangeBoomboxSongClientRpc(AudioSource ___boomboxAudio, AudioClip[] ___musicAudios, int songIndex)
+        public void ChangeBoomboxSongClientRpc(AudioClip[] ___musicAudios, int songIndex)
         {
-            LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Current Audio Clip Index: {0}\nNext Audio Clip Index: {1}", Array.IndexOf(___musicAudios, ___boomboxAudio.clip).ToString(), songIndex.ToString()));
-            ___boomboxAudio.clip = ___musicAudios[songIndex];
-            ___boomboxAudio.Play();
+            LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Current Audio Clip Index: {0}\nNext Audio Clip Index: {1}", Array.IndexOf(___musicAudios, boomboxInstance.GetComponent<AudioSource>().clip).ToString(), songIndex.ToString()));
+            boomboxInstance.GetComponent<AudioSource>().clip = ___musicAudios[songIndex];
+            boomboxInstance.GetComponent<AudioSource>().Play();
         }
     }
 }

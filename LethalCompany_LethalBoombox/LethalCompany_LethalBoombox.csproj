@@ -103,6 +103,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddedScripts\SpotifyAPI_NetworkHandler.cs" />
     <Compile Include="AddedScripts\BoomboxNetworkHandler.cs" />
     <Compile Include="AddedScripts\BoomboxTerminalCommands.cs" />
     <Compile Include="AddedScripts\SpotifyAPI.cs" />

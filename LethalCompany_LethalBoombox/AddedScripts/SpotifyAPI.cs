@@ -119,6 +119,7 @@ namespace LethalCompany_LethalBoombox.AddedScripts
             {
                 Instance = this;
             }
+            gameObject.AddComponent<SpotifyAPI_NetworkHandler>();
             StartCoroutine(InitializeSpotify());
             
             SongInput = "";
@@ -273,7 +274,8 @@ namespace LethalCompany_LethalBoombox.AddedScripts
                         break;
                     case UnityWebRequest.Result.Success:
                         AudioClip newSpotifyAudioClip = DownloadHandlerAudioClip.GetContent(webRequest);
-                        AddAudioClip(newSpotifyAudioClip);
+                        yield return new WaitUntil(() => GetComponent<SpotifyAPI_NetworkHandler>() != null);
+                        GetComponent<SpotifyAPI_NetworkHandler>().Call_UpdateSpotifyAudioClipsClientRpc(ref spotifyAudioClips, newSpotifyAudioClip);
                         LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Adding new track: {0}", artistFilteredSpotifyTracks[trackNumber].name));
                         break;
                     default:
@@ -301,30 +303,14 @@ namespace LethalCompany_LethalBoombox.AddedScripts
                         break;
                     case UnityWebRequest.Result.Success:
                         AudioClip newSpotifyAudioClip = DownloadHandlerAudioClip.GetContent(webRequest);
-                        AddAudioClip(newSpotifyAudioClip);
+                        yield return new WaitUntil(() => GetComponent<SpotifyAPI_NetworkHandler>() != null);
+                        GetComponent<SpotifyAPI_NetworkHandler>().Call_UpdateSpotifyAudioClipsClientRpc(ref spotifyAudioClips, newSpotifyAudioClip);
                         LethalBoomboxBase.Instance.mls.LogInfo(string.Format("Adding initial track url: {0}", trackURL));
                         break;
                     default:
                         LethalBoomboxBase.Instance.mls.LogInfo(string.Format("GetTrackAsAudioClip API Error: {0}", webRequest.error));
                         break;
                 }
-            }
-        }
-
-        public void AddAudioClip(AudioClip newSpotifyAudioClip)
-        {
-            if (spotifyAudioClips.Length < 10)
-            {
-                Array.Resize(ref spotifyAudioClips, spotifyAudioClips.Length + 1);
-                spotifyAudioClips[spotifyAudioClips.Length - 1] = newSpotifyAudioClip;
-            }
-            else
-            {
-                for (int i = 1; i < spotifyAudioClips.Length; i++)
-                {
-                    spotifyAudioClips[i - 1] = spotifyAudioClips[i];
-                }
-                spotifyAudioClips[9] = newSpotifyAudioClip;
             }
         }
 

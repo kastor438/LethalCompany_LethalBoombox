@@ -8,9 +8,9 @@ using UnityEngine;
 using RuntimeNetcodeRPCValidator;
 namespace LethalCompany_LethalBoombox
 {
+    [BepInPlugin(BoomboxPluginInfo.PLUGIN_GUID, BoomboxPluginInfo.PLUGIN_NAME, BoomboxPluginInfo.PLUGIN_VERSION)]
     [BepInDependency("LCAPI.TerminalCommands", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency(RuntimeNetcodeRPCValidator.MyPluginInfo.PLUGIN_GUID, RuntimeNetcodeRPCValidator.MyPluginInfo.PLUGIN_VERSION)]
-    [BepInPlugin(BoomboxPluginInfo.PLUGIN_GUID, BoomboxPluginInfo.PLUGIN_NAME, BoomboxPluginInfo.PLUGIN_VERSION)]
     public class LethalBoomboxBase : BaseUnityPlugin
     {
         private readonly Harmony harmony = new Harmony(BoomboxPluginInfo.PLUGIN_GUID);
